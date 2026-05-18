@@ -1,0 +1,19 @@
+# Profile env files — copy .env.example to .env.<profile> and fill in
+.env.*
+!.env.example
+
+# Per-profile Claude state (history, settings, MCPs)
+claude/.claude-state/
+
+# Shared mise tool cache
+.mise-cache/
+
+# Generated Docker Compose override (built from PORT_*/MOUNT_* profile vars)
+claude/docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
