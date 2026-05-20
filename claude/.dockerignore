@@ -1,0 +1,4 @@
+# Only entrypoint.sh is COPYed in the Dockerfile — exclude everything else
+# to keep build context small even as .claude-state grows.
+**
+!entrypoint.sh
