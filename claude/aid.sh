@@ -44,13 +44,19 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 echo "[aid] Loading profile: $ENV_FILE"
-set -a; source "$ENV_FILE"; set +a
+# source via sed so Windows backslash paths (C:\foo) are normalised to C:/foo
+set -a; source <(sed 's/\\/\//g' "$ENV_FILE"); set +a
 
 # ── Validate ──────────────────────────────────────────────────────────────────
 [ -z "${SANDBOX_NAME:-}"   ] && { echo "ERROR: SANDBOX_NAME not set in $ENV_FILE";   exit 1; }
 [ -z "${WORKSPACE_PATH:-}" ] && { echo "ERROR: WORKSPACE_PATH not set in $ENV_FILE"; exit 1; }
 
 CONTAINER="$SANDBOX_NAME"
+
+# Resolve Claude state directory — defaults to SANDBOX_NAME if CLAUDE_STATE_NAME unset.
+# Exporting ensures docker-compose.yml picks it up as ${CLAUDE_STATE_NAME}.
+CLAUDE_STATE="${CLAUDE_STATE_NAME:-$SANDBOX_NAME}"
+export CLAUDE_STATE_NAME="$CLAUDE_STATE"
 
 # ── Override generator ────────────────────────────────────────────────────────
 generate_override() {
@@ -114,16 +120,12 @@ generate_override() {
 case "$COMMAND" in
 
 start)
-    if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-        echo "[aid] WARNING: No auth credentials found. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN."
-    fi
-
     # Ensure bind-mount host dirs exist (Docker creates them as root otherwise)
-    mkdir -p "$SCRIPT_DIR/.claude-state/$SANDBOX_NAME"
+    mkdir -p "$SCRIPT_DIR/.claude-state/$CLAUDE_STATE"
     mkdir -p "$REPO_ROOT/.mise-cache"
 
     # Ensure .claude.json host file exists (Docker requires file mounts to pre-exist)
-    CLAUDE_JSON="$SCRIPT_DIR/.claude-state/$SANDBOX_NAME/.claude.json"
+    CLAUDE_JSON="$SCRIPT_DIR/.claude-state/$CLAUDE_STATE/.claude.json"
     [ -f "$CLAUDE_JSON" ] || echo '{}' > "$CLAUDE_JSON"
 
     generate_override

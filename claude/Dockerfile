@@ -66,6 +66,13 @@ RUN curl https://mise.run | sh
 RUN echo 'eval "$(~/.local/bin/mise activate bash)"' >> ~/.bashrc \
     && echo 'eval "$(~/.local/bin/mise activate bash --shims)"' >> ~/.profile
 
+# Trust all configs under /workspace globally so users never see "not trusted"
+# errors when navigating into repos. The config dir is separate from the
+# bind-mounted data dir (~/.local/share/mise) so this is baked into the image.
+RUN mkdir -p /home/dev/.config/mise \
+    && printf '[settings]\ntrusted_config_paths = ["/workspace"]\n' \
+       > /home/dev/.config/mise/config.toml
+
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 COPY --chown=dev:dev entrypoint.sh /home/dev/entrypoint.sh
 RUN chmod +x /home/dev/entrypoint.sh

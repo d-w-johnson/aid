@@ -54,6 +54,7 @@ Get-Content $EnvFile | ForEach-Object {
         $value = $Matches[2].Trim()
         # Strip surrounding quotes so values like "My Name" work on both bash and PS
         if ($value -match '^"(.*)"$' -or $value -match "^'(.*)'$") { $value = $Matches[1] }
+        $value = $value -replace '\\', '/'   # normalise Windows paths so Docker/YAML accept them
         [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
     }
 }
@@ -63,6 +64,11 @@ if (-not $env:SANDBOX_NAME)   { Write-Error "SANDBOX_NAME not set in $EnvFile"; 
 if (-not $env:WORKSPACE_PATH) { Write-Error "WORKSPACE_PATH not set in $EnvFile"; exit 1 }
 
 $Container = $env:SANDBOX_NAME
+
+# Resolve Claude state directory — defaults to SANDBOX_NAME if CLAUDE_STATE_NAME unset.
+# Exporting ensures docker-compose.yml picks it up as ${CLAUDE_STATE_NAME}.
+$ClaudeState = if ($env:CLAUDE_STATE_NAME) { $env:CLAUDE_STATE_NAME } else { $env:SANDBOX_NAME }
+[System.Environment]::SetEnvironmentVariable("CLAUDE_STATE_NAME", $ClaudeState, "Process")
 
 # ── Override generator ────────────────────────────────────────────────────────
 function New-Override {
@@ -124,16 +130,12 @@ function New-Override {
 switch ($Command) {
 
     "start" {
-        if (-not $env:ANTHROPIC_API_KEY -and -not $env:CLAUDE_CODE_OAUTH_TOKEN) {
-            Write-Warning "No auth credentials found. Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN."
-        }
-
         # Ensure bind-mount host dirs exist
-        New-Item -ItemType Directory -Force (Join-Path $ScriptDir ".claude-state\$Container") | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $ScriptDir ".claude-state\$ClaudeState") | Out-Null
         New-Item -ItemType Directory -Force (Join-Path $RepoRoot ".mise-cache")               | Out-Null
 
         # Ensure .claude.json host file exists (Docker requires file mounts to pre-exist)
-        $claudeJsonPath = Join-Path $ScriptDir ".claude-state\$Container\.claude.json"
+        $claudeJsonPath = Join-Path $ScriptDir ".claude-state\$ClaudeState\.claude.json"
         if (-not (Test-Path $claudeJsonPath)) {
             '{}' | Set-Content $claudeJsonPath -Encoding UTF8
         }

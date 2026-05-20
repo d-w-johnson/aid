@@ -21,13 +21,7 @@ if [ "${ENABLE_DOCKER:-false}" = "true" ]; then
     echo "[aid] Docker daemon ready"
 fi
 
-# ── 3. Validate auth ──────────────────────────────────────────────────────────
-if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    echo "[aid] WARNING: No auth credentials set."
-    echo "[aid]   Set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN in your profile."
-fi
-
-# ── 4. Git identity and credentials ───────────────────────────────────────────
+# ── 3. Git identity and credentials ───────────────────────────────────────────
 # Trust all directories — workspace bind mounts are owned by the host UID, not
 # the container's dev user, which git rejects by default.
 git config --global --add safe.directory '*'
@@ -62,18 +56,20 @@ EOF
 # ── 6. Mise install in workspace repos ───────────────────────────────────────
 if [ -d /workspace ]; then
     echo "[aid] Running mise install in workspace repos..."
-    while IFS= read -r git_dir; do
-        repo="$(dirname "$git_dir")"
-        # Skip .git dirs nested inside another .git (git worktrees, submodules)
-        if echo "$git_dir" | grep -qE '/.git/.'; then continue; fi
-        if [ -f "$repo/.mise.toml" ] || [ -f "$repo/.tool-versions" ]; then
-            echo "[aid]   $repo"
-            bash --login -c "cd '$repo' && mise trust -y" \
-                || echo "[aid]   WARNING: mise trust failed in $repo"
-            bash --login -c "cd '$repo' && mise install" \
-                || echo "[aid]   WARNING: mise install failed in $repo"
-        fi
-    done < <(find /workspace -maxdepth 10 -name ".git" -type d 2>/dev/null)
+    # Find all three config filename variants (.mise.toml, mise.toml, .tool-versions).
+    # Trust each file explicitly then install — /workspace is already in
+    # trusted_config_paths globally, but explicit trust covers edge cases.
+    while IFS= read -r cfg_file; do
+        # Skip configs inside .git dirs (submodules, worktrees)
+        echo "$cfg_file" | grep -qE '/\.git/' && continue
+        repo="$(dirname "$cfg_file")"
+        echo "[aid]   $repo"
+        bash --login -c "mise trust '$cfg_file'" 2>/dev/null || true
+        bash --login -c "cd '$repo' && mise install" \
+            || echo "[aid]   WARNING: mise install failed in $repo"
+    done < <(find /workspace -maxdepth 10 \
+        \( -name ".mise.toml" -o -name "mise.toml" -o -name ".tool-versions" \) \
+        -type f 2>/dev/null)
 fi
 
 # ── 7. Agent config ───────────────────────────────────────────────────────────
