@@ -111,10 +111,11 @@ function New-Override {
         $hasEnv = $true
     }
 
-    # ENABLE_DOCKER
+    # ENABLE_DOCKER — Windows/Docker Desktop requires privileged mode because the
+    # WSL2 kernel blocks newuidmap (user namespace nesting) without it. The Docker
+    # Desktop VM is the security boundary here, not the container privilege level.
     if ($env:ENABLE_DOCKER -eq "true") {
-        $lines.Add("    security_opt:")
-        $lines.Add("      - seccomp:unconfined")
+        $lines.Add("    privileged: true")
         $hasSec = $true
     }
 

@@ -5,7 +5,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # ── System packages ───────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y \
     curl git sudo ca-certificates gnupg lsb-release \
-    iptables uidmap dbus-user-session fuse-overlayfs \
+    iptables iproute2 uidmap dbus-user-session fuse-overlayfs \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Docker CE ─────────────────────────────────────────────────────────────────

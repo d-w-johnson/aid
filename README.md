@@ -140,9 +140,13 @@ You can intervene at any point — click through a login, solve a CAPTCHA — an
 ENABLE_DOCKER=true
 ```
 
-Claude can run `docker compose up`, spin up databases, build images. Uses rootless Docker-in-Docker.
+Claude can run `docker compose up`, spin up databases, build images, etc.
 
-> ⚠️ **Linux users:** this adds `--security-opt seccomp=unconfined`, relaxing syscall filtering. Rootless mode prevents inner containers from escalating to host root, but syscall filtering is disabled. On Windows/macOS this runs inside Docker Desktop's VM and the risk is much lower.
+Both `aid.sh` and `aid.ps1` detect your platform and apply the appropriate security configuration automatically.
+
+**Linux (native)** — rootless Docker-in-Docker. The daemon runs as the `dev` user with no host-root access. The container gets `seccomp:unconfined` and `apparmor:unconfined` to allow the user-namespace operations rootless Docker requires, but no privilege escalation. Inner containers cannot escalate to host root.
+
+**Windows, macOS, and WSL2 (Docker Desktop)** — Docker Desktop's VM kernel blocks the user-namespace nesting that rootless Docker requires, so the container is started with `--privileged`. The Docker Desktop VM is the security boundary here; `--privileged` grants access to that VM, not your host OS. If that trade-off is not acceptable to you, leave `ENABLE_DOCKER` unset.
 
 ## Stopping vs. Wiping
 

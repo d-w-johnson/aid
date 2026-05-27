@@ -28,6 +28,18 @@ EOF
 
 [ -z "$COMMAND" ] && usage
 
+# ── Platform detection ────────────────────────────────────────────────────────
+# Native Linux uses rootless Docker-in-Docker (no privilege escalation needed).
+# macOS, Windows Git Bash, and WSL2 all run containers inside Docker Desktop's
+# VM whose kernel blocks user-namespace nesting — privileged mode required.
+KERNEL=$(uname -s)
+KERNEL_RELEASE=$(uname -r)
+if [[ "$KERNEL" == "Linux" ]] && ! echo "$KERNEL_RELEASE" | grep -qi "microsoft"; then
+    DOCKER_NEEDS_PRIVILEGED=false
+else
+    DOCKER_NEEDS_PRIVILEGED=true
+fi
+
 # ── Load profile ──────────────────────────────────────────────────────────────
 cd "$REPO_ROOT"
 
@@ -84,10 +96,14 @@ generate_override() {
         env_block="      - START_DIR=${START_SUBDIR}\n"
     fi
 
-    # ENABLE_DOCKER → security_opt
+    # ENABLE_DOCKER → platform-appropriate security config
     local sec_block=""
     if [ "${ENABLE_DOCKER:-false}" = "true" ]; then
-        sec_block="    security_opt:\n      - seccomp:unconfined\n"
+        if [ "$DOCKER_NEEDS_PRIVILEGED" = "true" ]; then
+            sec_block="    privileged: true\n"
+        else
+            sec_block="    security_opt:\n      - seccomp:unconfined\n      - apparmor:unconfined\n"
+        fi
     fi
 
     if [ -z "$ports_block" ] && [ -z "$vols_block" ] && [ -z "$env_block" ] && [ -z "$sec_block" ]; then

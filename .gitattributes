@@ -1,4 +1,23 @@
-# Files that run inside Linux containers must use LF line endings
-*.sh         text eol=lf
-Dockerfile   text eol=lf
-.env*        text eol=lf
+# Normalize all text files to LF in the repo and check out as LF.
+# This prevents Windows Git (core.autocrlf=true) from converting endings and
+# causing every file to appear modified when an agent runs `git add -A`.
+* text=auto eol=lf
+
+# Windows-only scripts must check out as CRLF — PowerShell and cmd.exe
+# both tolerate CRLF but some older hosts reject bare LF in .ps1 files.
+*.ps1  text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Explicitly mark binary formats so Git never touches them.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.zip  binary
+*.gz   binary
+*.tar  binary
+*.pdf  binary

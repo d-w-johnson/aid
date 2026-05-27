@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # ── 1. Activate mise ──────────────────────────────────────────────────────────
-export PATH="$HOME/.local/bin:$PATH"
+# Prepend shims first so all child processes (including Claude's non-interactive
+# Bash tool invocations) can find mise-managed tools without needing shell hooks.
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 eval "$($HOME/.local/bin/mise activate bash)" 2>/dev/null || true
 
 # ── 2. Rootless Docker daemon ─────────────────────────────────────────────────
@@ -25,6 +27,13 @@ fi
 # Trust all directories — workspace bind mounts are owned by the host UID, not
 # the container's dev user, which git rejects by default.
 git config --global --add safe.directory '*'
+
+# Always check out and commit files as-is — no CRLF/LF conversion.
+# This container runs Linux; without these settings Git (which can inherit
+# Windows defaults via the bind-mounted workspace) will convert every file's
+# line endings on `git add`, marking the entire working tree as modified.
+git config --global core.autocrlf false
+git config --global core.eol lf
 
 [ -n "${GIT_AUTHOR_NAME:-}"  ] && git config --global user.name  "$GIT_AUTHOR_NAME"
 [ -n "${GIT_AUTHOR_EMAIL:-}" ] && git config --global user.email "$GIT_AUTHOR_EMAIL"
