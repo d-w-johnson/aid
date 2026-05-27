@@ -134,6 +134,7 @@ switch ($Command) {
         # Ensure bind-mount host dirs exist
         New-Item -ItemType Directory -Force (Join-Path $ScriptDir ".claude-state\$ClaudeState") | Out-Null
         New-Item -ItemType Directory -Force (Join-Path $RepoRoot ".mise-cache")               | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $RepoRoot ".gradle-cache")             | Out-Null
 
         # Ensure .claude.json host file exists (Docker requires file mounts to pre-exist)
         $claudeJsonPath = Join-Path $ScriptDir ".claude-state\$ClaudeState\.claude.json"

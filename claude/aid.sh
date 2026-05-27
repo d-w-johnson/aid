@@ -139,6 +139,7 @@ start)
     # Ensure bind-mount host dirs exist (Docker creates them as root otherwise)
     mkdir -p "$SCRIPT_DIR/.claude-state/$CLAUDE_STATE"
     mkdir -p "$REPO_ROOT/.mise-cache"
+    mkdir -p "$REPO_ROOT/.gradle-cache"
 
     # Ensure .claude.json host file exists (Docker requires file mounts to pre-exist)
     CLAUDE_JSON="$SCRIPT_DIR/.claude-state/$CLAUDE_STATE/.claude.json"
