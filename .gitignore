@@ -11,6 +11,9 @@ claude/.claude-state/
 # Shared Gradle cache
 .gradle-cache/
 
+# Shared npm cache
+.npm-cache/
+
 # Generated Docker Compose override (built from PORT_*/MOUNT_* profile vars)
 claude/docker-compose.override.yml
 

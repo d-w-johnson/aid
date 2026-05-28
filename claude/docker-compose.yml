@@ -25,6 +25,7 @@ services:
     volumes:
       - ../.mise-cache:/home/dev/.local/share/mise/installs
       - ../.gradle-cache:/home/dev/.gradle
+      - ../.npm-cache:/home/dev/.npm
       - ./.claude-state/${CLAUDE_STATE_NAME:-default}:/home/dev/.claude
       - ./.claude-state/${CLAUDE_STATE_NAME:-default}/.claude.json:/home/dev/.claude.json
       - ${WORKSPACE_PATH:-/tmp}:/workspace
