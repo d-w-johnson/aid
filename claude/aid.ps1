@@ -119,7 +119,16 @@ function New-Override {
         $hasSec = $true
     }
 
-    if (-not ($hasPorts -or $hasVols -or $hasEnv -or $hasSec)) {
+    # ENABLE_HOST_NETWORK — shares the host network stack with the container so it
+    # can reach local dev servers and resources without extra port configuration.
+    # Requires Docker Desktop 4.34+ on Windows/macOS; works natively on Linux.
+    $hasNet = $false
+    if ($env:ENABLE_HOST_NETWORK -eq "true") {
+        $lines.Add("    network_mode: host")
+        $hasNet = $true
+    }
+
+    if (-not ($hasPorts -or $hasVols -or $hasEnv -or $hasSec -or $hasNet)) {
         "services: {}" | Set-Content $out -Encoding UTF8
         return
     }

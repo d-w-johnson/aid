@@ -106,7 +106,13 @@ generate_override() {
         fi
     fi
 
-    if [ -z "$ports_block" ] && [ -z "$vols_block" ] && [ -z "$env_block" ] && [ -z "$sec_block" ]; then
+    # ENABLE_HOST_NETWORK → network_mode: host
+    local net_block=""
+    if [ "${ENABLE_HOST_NETWORK:-false}" = "true" ]; then
+        net_block="    network_mode: host\n"
+    fi
+
+    if [ -z "$ports_block" ] && [ -z "$vols_block" ] && [ -z "$env_block" ] && [ -z "$sec_block" ] && [ -z "$net_block" ]; then
         echo "services: {}" > "$out"
         return
     fi
@@ -128,6 +134,9 @@ generate_override() {
         fi
         if [ -n "$sec_block" ]; then
             printf "%b" "$sec_block"
+        fi
+        if [ -n "$net_block" ]; then
+            printf "%b" "$net_block"
         fi
     } > "$out"
 }
